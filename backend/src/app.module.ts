@@ -9,6 +9,9 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { StravaModule } from './strava/strava.module';
 import { AnalyticsModule } from './analytics/analytics.module';
+import { ActivitiesModule } from './activities/activities.module';
+import { MlModule } from './ml/ml.module';
+import { User, Activity, AnalyticsEvent, AuthToken } from './entities';
 
 @Module({
   imports: [
@@ -22,7 +25,9 @@ import { AnalyticsModule } from './analytics/analytics.module';
       username: process.env.DB_USERNAME || 'postgres',
       password: process.env.DB_PASSWORD || 'password',
       database: process.env.DB_NAME || 'aeropacer',
-      autoLoadEntities: true,
+      entities: [User, Activity, AnalyticsEvent, AuthToken],
+      migrations: ['dist/migrations/*.js'],
+      migrationsTableName: 'migrations',
       synchronize: process.env.NODE_ENV !== 'production',
     }),
     ThrottlerModule.forRoot([{
@@ -33,6 +38,8 @@ import { AnalyticsModule } from './analytics/analytics.module';
     UsersModule,
     StravaModule,
     AnalyticsModule,
+    ActivitiesModule,
+    MlModule,
   ],
   controllers: [AppController],
   providers: [AppService],
