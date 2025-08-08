@@ -15,6 +15,8 @@ from .analytics.coaching_engine import CoachingEngine
 from .analytics.performance_predictor import PerformancePredictor
 from .analytics.fatigue_analyzer import FatigueAnalyzer
 from .analytics.data_processor import DataProcessor
+from .data.synthetic_generator import generate_dataset
+from .analytics.train_global_model import train_from_directory
 
 load_dotenv()
 
@@ -68,6 +70,19 @@ class RaceStrategyRequest(BaseModel):
     activities: List[ActivityData]
     race_distance: float
     race_date: datetime
+
+class TrainingPlanRequest(BaseModel):
+    user_id: str
+    activities: List[ActivityData]
+    user_profile: Optional[UserProfile] = None
+    goals: Optional[List[str]] = None
+    weeks: Optional[int] = 4
+
+class NextWorkoutRequest(BaseModel):
+    user_id: str
+    activities: List[ActivityData]
+    user_profile: Optional[UserProfile] = None
+    goals: Optional[List[str]] = None
 
 @app.get("/")
 async def root():
@@ -175,6 +190,33 @@ async def analyze_training_load(request: FatigueAnalysisRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error analyzing training load: {str(e)}")
 
+@app.post("/training/plan")
+async def generate_training_plan(request: TrainingPlanRequest):
+    """Generate a multi-week training plan."""
+    try:
+        plan = coaching_engine.generate_training_plan(
+            activities=request.activities,
+            user_profile=request.user_profile,
+            goals=request.goals,
+            weeks=request.weeks or 4
+        )
+        return plan
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error generating training plan: {str(e)}")
+
+@app.post("/workout/next")
+async def suggest_next_workout(request: NextWorkoutRequest):
+    """Suggest the next workout based on fatigue and recent training."""
+    try:
+        workout = coaching_engine.suggest_next_workout(
+            activities=request.activities,
+            user_profile=request.user_profile,
+            goals=request.goals
+        )
+        return workout
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error suggesting next workout: {str(e)}")
+
 @app.get("/training/trends/{user_id}")
 async def get_training_trends(user_id: str, days: int = 30):
     """
@@ -211,6 +253,35 @@ async def get_model_status():
         "supported_race_distances": ["5K", "10K", "Half Marathon", "Marathon"],
         "min_activities_for_analysis": 3
     }
+
+@app.post("/dev/synthetic/generate")
+async def dev_generate_synthetic(n_users: int = 200):
+    """
+    Generate synthetic activities and race labels into app/data.
+    Returns file paths. For development use.
+    """
+    try:
+        act_path, race_path = generate_dataset(n_users=n_users)
+        return {"success": True, "activities": act_path, "races": race_path}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Synthetic generation failed: {str(e)}")
+
+@app.post("/dev/model/train")
+async def dev_train_global_model():
+    """
+    Train the global model from synthetic dataset in app/data.
+    Returns training metrics and model path. For development use.
+    """
+    try:
+        # app/ is here, so app/data is synthetic; repo-level data is ../../data
+        data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "./data"))
+        repo_data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../..", "data"))
+        kaggle_dir = repo_data_dir if os.path.exists(os.path.join(repo_data_dir, "s1_summaries.csv")) else None
+        info = train_from_directory(data_dir, kaggle_dir=kaggle_dir)
+        return {"success": True, **info}
+    except Exception as e:
+        import traceback
+        raise HTTPException(status_code=500, detail=f"Training failed: {str(e)}\n{traceback.format_exc()}")
 
 # Test endpoint for development
 @app.post("/test/sample-data")

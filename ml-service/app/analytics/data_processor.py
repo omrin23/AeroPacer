@@ -37,7 +37,11 @@ class DataProcessor:
         
         df = pd.DataFrame(data)
         if not df.empty:
-            df['start_date'] = pd.to_datetime(df['start_date'])
+            # Normalize to timezone-naive datetimes to avoid tz-aware vs tz-naive comparisons
+            df['start_date'] = pd.to_datetime(df['start_date'], utc=False)
+            # If parsed as tz-aware (e.g., from 'Z'), strip timezone info
+            if hasattr(df['start_date'].dt, 'tz') and df['start_date'].dt.tz is not None:
+                df['start_date'] = df['start_date'].dt.tz_localize(None)
             df = df.sort_values('start_date')
         
         return df

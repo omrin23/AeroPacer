@@ -10,6 +10,9 @@ from datetime import datetime, timedelta
 import math
 
 from ..models.data_models import ActivityData, PerformancePrediction
+from .features import build_features_from_running_df, FEATURE_ORDER
+import joblib
+import os
 
 class PerformancePredictor:
     """Predicts race performance based on training data using ML models"""
@@ -34,6 +37,28 @@ class PerformancePredictor:
         
         # VDOT/Performance equivalency tables (simplified)
         self.vdot_table = self._create_vdot_table()
+        
+        # Optional: load global trained model if available
+        self.global_model = None
+        self.global_model_features = FEATURE_ORDER
+        self._global_model_path = os.path.abspath(
+            os.path.join(os.path.dirname(__file__), "../../models/global_performance_gbr.joblib")
+        )
+        # Try eager load if present
+        self._try_load_global_model()
+
+    def _try_load_global_model(self):
+        if self.global_model is not None:
+            return
+        if os.path.exists(self._global_model_path):
+            try:
+                bundle = joblib.load(self._global_model_path)
+                self.global_model = bundle.get("model")
+                feats = bundle.get("feature_order")
+                if isinstance(feats, list):
+                    self.global_model_features = feats
+            except Exception:
+                self.global_model = None
     
     def _create_vdot_table(self) -> Dict[str, Dict[int, float]]:
         """Create simplified VDOT equivalency table"""
@@ -83,10 +108,26 @@ class PerformancePredictor:
         # Method 3: Distance/time relationship modeling
         predictions['distance_model'] = self._predict_using_distance_model(running_df, race_distance)
         
+        # Method 0 (optional): Global trained model
+        # Ensure model is loaded if it became available after startup
+        self._try_load_global_model()
+        if self.global_model is not None:
+            # Build compact features from last 28/14/7 days window
+            # Reuse the DataFrame already made
+            from .data_processor import DataProcessor
+            dp = DataProcessor()
+            running_df = dp.calculate_running_metrics(df)
+            fdict = build_features_from_running_df(running_df, reference_time=datetime.now(), race_distance_m=race_distance)
+            x = np.array([[fdict.get(name, 0.0) for name in self.global_model_features]], dtype=float)
+            try:
+                predictions['global_ml'] = float(self.global_model.predict(x)[0])
+            except Exception:
+                predictions['global_ml'] = 0
+
         # Ensemble prediction (weighted average)
-        weights = {'vdot': 0.4, 'pace_trend': 0.3, 'distance_model': 0.3}
+        weights = {'global_ml': 0.5, 'vdot': 0.25, 'pace_trend': 0.15, 'distance_model': 0.10}
         
-        final_prediction = sum(pred * weights[method] 
+        final_prediction = sum(pred * weights.get(method, 0) 
                              for method, pred in predictions.items() 
                              if pred > 0)
         
@@ -134,7 +175,10 @@ class PerformancePredictor:
         
         df = pd.DataFrame(data)
         if not df.empty:
-            df['start_date'] = pd.to_datetime(df['start_date'])
+            # Normalize timezone to naive datetimes for consistent comparisons
+            df['start_date'] = pd.to_datetime(df['start_date'], utc=False)
+            if hasattr(df['start_date'].dt, 'tz') and df['start_date'].dt.tz is not None:
+                df['start_date'] = df['start_date'].dt.tz_localize(None)
             df = df.sort_values('start_date')
             df['distance_km'] = df['distance'] / 1000
             df['pace_min_per_km'] = df['average_pace'] / 60 if 'average_pace' in df.columns else None

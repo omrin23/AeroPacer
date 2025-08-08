@@ -463,6 +463,203 @@ class CoachingEngine:
         
         return tips
     
+    def generate_training_plan(
+        self,
+        activities: List[ActivityData],
+        user_profile: Optional[UserProfile] = None,
+        goals: Optional[List[str]] = None,
+        weeks: int = 4
+    ) -> Dict[str, Any]:
+        """Generate a multi-week training plan based on training data and goals.
+        Returns a dict with week-by-week schedule including workout types and target distances.
+        """
+        if weeks < 1:
+            weeks = 1
+        if not activities:
+            # Simple starter plan
+            base_week = [
+                {"day": "Mon", "workout": "Rest or easy 20-30 min"},
+                {"day": "Tue", "workout": "Easy run 30 min"},
+                {"day": "Wed", "workout": "Cross-train or rest"},
+                {"day": "Thu", "workout": "Easy run 30-40 min"},
+                {"day": "Fri", "workout": "Rest"},
+                {"day": "Sat", "workout": "Long easy run 45-60 min"},
+                {"day": "Sun", "workout": "Easy run 20-30 min or rest"},
+            ]
+            return {
+                "plan_type": "starter",
+                "weeks": [
+                    {"week": i + 1, "schedule": base_week} for i in range(weeks)
+                ]
+            }
+
+        df = self.data_processor.activities_to_dataframe(activities)
+        running_df = self.data_processor.calculate_running_metrics(df)
+        training_load = self.data_processor.calculate_training_load(running_df)
+        trends = self.data_processor.get_training_trends(running_df)
+
+        # Estimate weekly volume baseline (km)
+        recent_km = float(running_df.tail(14)["distance_km"].sum()) if not running_df.empty else 0.0
+        weekly_baseline = max(20.0, min(80.0, recent_km / 2.0)) if recent_km > 0 else 25.0
+
+        # Respect 10% rule and ACWR
+        weekly_targets = []
+        current = weekly_baseline
+        for i in range(weeks):
+            # If risk high, avoid increase
+            if training_load.risk_level == "high":
+                target = max(current * 0.9, current)  # maintain or slight reduce
+            else:
+                target = min(current * (1.0 + self.training_principles['weekly_mileage_increase']), current + 6.0)
+            weekly_targets.append(round(target, 1))
+            current = target
+
+        # Predict performance to derive paces
+        try:
+            pred = self.performance_predictor.predict_race_time(activities, race_distance=10000.0)
+            ten_k_pace = (pred.predicted_time / 10000.0)  # sec per meter
+            ten_k_pace_sec_per_km = ten_k_pace * 1000.0
+        except Exception:
+            # Fallback from recent average pace
+            ten_k_pace_sec_per_km = float(running_df['pace_min_per_km'].mean() * 60.0) if 'pace_min_per_km' in running_df else 360.0
+
+        paces = {
+            "easy": max(ten_k_pace_sec_per_km * 1.15, 360.0),
+            "long": max(ten_k_pace_sec_per_km * 1.2, 380.0),
+            "tempo": ten_k_pace_sec_per_km * 0.95,
+            "interval": ten_k_pace_sec_per_km * 0.85,
+        }
+
+        # Build weekly schedule using 80/20 rule
+        week_plans: List[Dict[str, Any]] = []
+        days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+        for w_idx in range(weeks):
+            target_km = weekly_targets[w_idx]
+            # Allocate distances roughly: long run ~30%, quality ~20%, rest easy
+            long_km = round(min(target_km * self.training_principles['long_run_percentage'], target_km * 0.35), 1)
+            quality_km = round(target_km * self.training_principles['hard_easy_ratio'], 1)
+            remaining_km = max(0.0, target_km - long_km - quality_km)
+            easy_days = 3
+            easy_km_each = round(remaining_km / max(1, easy_days), 1)
+
+            schedule = [
+                {"day": days[0], "type": "rest_or_easy", "desc": "Rest or easy jog", "pace_s_per_km": paces["easy"], "distance_km": 0},
+                {"day": days[1], "type": "quality", "desc": "Intervals (e.g., 5x1km)", "pace_s_per_km": paces["interval"], "distance_km": round(quality_km * 0.5, 1)},
+                {"day": days[2], "type": "easy", "desc": "Easy run", "pace_s_per_km": paces["easy"], "distance_km": easy_km_each},
+                {"day": days[3], "type": "quality", "desc": "Tempo run 20-30 min", "pace_s_per_km": paces["tempo"], "distance_km": round(quality_km * 0.5, 1)},
+                {"day": days[4], "type": "rest", "desc": "Rest or cross-train", "pace_s_per_km": None, "distance_km": 0},
+                {"day": days[5], "type": "long", "desc": "Long easy run", "pace_s_per_km": paces["long"], "distance_km": long_km},
+                {"day": days[6], "type": "easy", "desc": "Easy run", "pace_s_per_km": paces["easy"], "distance_km": easy_km_each},
+            ]
+
+            week_plans.append({
+                "week": w_idx + 1,
+                "target_km": target_km,
+                "schedule": schedule
+            })
+
+        return {
+            "plan_type": "personalized",
+            "targets_km": weekly_targets,
+            "paces_s_per_km": paces,
+            "weeks": week_plans,
+            "notes": [
+                "Follow 80/20 easy-to-hard principle",
+                "Increase mileage gradually, max 10% per week",
+                "Adjust based on fatigue and readiness"
+            ]
+        }
+
+    def suggest_next_workout(
+        self,
+        activities: List[ActivityData],
+        user_profile: Optional[UserProfile] = None,
+        goals: Optional[List[str]] = None
+    ) -> Dict[str, Any]:
+        """Suggest a next workout based on current fatigue and recent training mix."""
+        if not activities:
+            return {
+                "type": "easy",
+                "title": "Easy run 20-30 minutes",
+                "description": "Start with a comfortable, conversational pace.",
+                "pace_s_per_km": 390,
+                "distance_km": 4.0
+            }
+
+        df = self.data_processor.activities_to_dataframe(activities)
+        running_df = self.data_processor.calculate_running_metrics(df)
+        fatigue = self.fatigue_analyzer.analyze_fatigue(activities, user_profile.__dict__ if user_profile else None)
+
+        # Determine baseline pace
+        try:
+            pred = self.performance_predictor.predict_race_time(activities, race_distance=10000.0)
+            base_pace = (pred.predicted_time / 10000.0) * 1000.0
+        except Exception:
+            base_pace = float(running_df['pace_min_per_km'].tail(5).mean() * 60.0) if 'pace_min_per_km' in running_df else 360.0
+
+        if fatigue.fatigue_score >= 70 or fatigue.training_readiness == "low":
+            return {
+                "type": "recovery",
+                "title": "Recovery run or rest",
+                "description": "Keep it very easy or take a complete rest day.",
+                "pace_s_per_km": base_pace * 1.25,
+                "distance_km": 4.0
+            }
+
+        # Look at last few workouts for variety
+        last_types = []
+        if 'pace_min_per_km' in running_df:
+            # Heuristic: faster than 10k pace ~ interval/tempo; else easy/long
+            recent = running_df.tail(5)
+            for _, row in recent.iterrows():
+                pace_s = float(row.get('pace_min_per_km', 6.0)) * 60.0
+                if pace_s < base_pace * 0.9:
+                    last_types.append('interval')
+                elif pace_s < base_pace * 1.0:
+                    last_types.append('tempo')
+                elif row.get('distance_km', 0) > 15:
+                    last_types.append('long')
+                else:
+                    last_types.append('easy')
+
+        def not_recent(t: str) -> bool:
+            return t not in last_types[-2:]
+
+        # Choose next workout
+        if not_recent('interval'):
+            return {
+                "type": "interval",
+                "title": "Intervals: 5 x 1km",
+                "description": "5 repeats of 1km with 2-3 min easy jog recoveries.",
+                "pace_s_per_km": base_pace * 0.85,
+                "distance_km": 8.0
+            }
+        if not_recent('tempo'):
+            return {
+                "type": "tempo",
+                "title": "Tempo run 20-30 minutes",
+                "description": "Sustain comfortably hard effort (threshold).",
+                "pace_s_per_km": base_pace * 0.95,
+                "distance_km": 8.0
+            }
+        if not_recent('long'):
+            return {
+                "type": "long",
+                "title": "Long easy run",
+                "description": "Build endurance with a relaxed long run.",
+                "pace_s_per_km": base_pace * 1.2,
+                "distance_km": 16.0
+            }
+
+        # Default to easy
+        return {
+            "type": "easy",
+            "title": "Easy aerobic run",
+            "description": "Comfortable conversational pace.",
+            "pace_s_per_km": base_pace * 1.15,
+            "distance_km": 6.0
+        }
+    
     def _create_recommendation(self, 
                              title: str, 
                              message: str, 

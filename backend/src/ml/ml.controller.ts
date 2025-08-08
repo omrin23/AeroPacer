@@ -10,17 +10,51 @@ import {
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
+import { IsArray, IsDateString, IsIn, IsInt, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import { Type } from 'class-transformer';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { MlService } from './ml.service';
 
 class PerformancePredictionDto {
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
   race_distance: number;
+
+  @IsOptional()
+  @IsString()
   race_type?: string;
 }
 
 class RaceStrategyDto {
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
   race_distance: number;
+
+  @IsString()
+  @IsDateString()
   race_date: string;
+}
+
+class TrainingPlanDto {
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  weeks?: number;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  goals?: string[];
+}
+
+class NextWorkoutDto {
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  goals?: string[];
 }
 
 @Controller('ml')
@@ -179,6 +213,68 @@ export class MlController {
       }
       throw new HttpException(
         `Failed to generate race strategy: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  @Post('training/plan')
+  async generateTrainingPlan(
+    @Request() req,
+    @Body() body: TrainingPlanDto,
+  ) {
+    try {
+      const plan = await this.mlService.generateTrainingPlan(
+        req.user.id,
+        body.weeks ?? 4,
+        body.goals ?? []
+      );
+
+      return {
+        success: true,
+        data: plan,
+        meta: {
+          user_id: req.user.id,
+          weeks: body.weeks ?? 4,
+          goals: body.goals ?? []
+        }
+      };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        `Failed to generate training plan: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  @Post('workout/next')
+  async suggestNextWorkout(
+    @Request() req,
+    @Body() body: NextWorkoutDto,
+  ) {
+    try {
+      const workout = await this.mlService.suggestNextWorkout(
+        req.user.id,
+        body.goals ?? []
+      );
+
+      return {
+        success: true,
+        data: workout,
+        meta: {
+          user_id: req.user.id,
+          goals: body.goals ?? []
+        }
+      };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        `Failed to suggest next workout: ${error.message}`,
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }

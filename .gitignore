@@ -86,3 +86,17 @@ Thumbs.db
 *.joblib
 models/*.pt
 models/*.pth
+
+# Images
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.bmp
+*.tiff
+*.ico
+*.webp
+*.svg
+
+# data
+data/

@@ -100,7 +100,10 @@ class FatigueAnalyzer:
         
         df = pd.DataFrame(data)
         if not df.empty:
-            df['start_date'] = pd.to_datetime(df['start_date'])
+            # Normalize timezone to naive datetimes for consistent comparisons
+            df['start_date'] = pd.to_datetime(df['start_date'], utc=False)
+            if hasattr(df['start_date'].dt, 'tz') and df['start_date'].dt.tz is not None:
+                df['start_date'] = df['start_date'].dt.tz_localize(None)
             df = df.sort_values('start_date')
             df['distance_km'] = df['distance'] / 1000
             df['duration_hours'] = df['duration'] / 3600

@@ -82,6 +82,36 @@ export interface TrainingLoad {
   recommendation: string;
 }
 
+export interface TrainingPlanWeekDay {
+  day: string;
+  type: string;
+  desc: string;
+  pace_s_per_km?: number | null;
+  distance_km: number;
+}
+
+export interface TrainingPlanWeek {
+  week: number;
+  target_km: number;
+  schedule: TrainingPlanWeekDay[];
+}
+
+export interface TrainingPlanResponse {
+  plan_type: string;
+  targets_km?: number[];
+  paces_s_per_km?: Record<string, number>;
+  weeks: TrainingPlanWeek[];
+  notes?: string[];
+}
+
+export interface NextWorkoutSuggestion {
+  type: string;
+  title: string;
+  description: string;
+  pace_s_per_km?: number;
+  distance_km?: number;
+}
+
 @Injectable()
 export class MlService {
   private readonly logger = new Logger(MlService.name);
@@ -94,7 +124,8 @@ export class MlService {
     private readonly userRepository: Repository<User>,
     private readonly configService: ConfigService,
   ) {
-    this.mlServiceUrl = this.configService.get<string>('ML_SERVICE_URL', 'http://ml-service:8000');
+    // Prefer localhost in dev unless ML_SERVICE_URL is explicitly set
+    this.mlServiceUrl = this.configService.get<string>('ML_SERVICE_URL', 'http://localhost:8000');
     this.logger.log(`ML Service URL: ${this.mlServiceUrl}`);
   }
 
@@ -247,6 +278,54 @@ export class MlService {
     }
   }
 
+  async generateTrainingPlan(
+    userId: string,
+    weeks: number = 4,
+    goals?: string[]
+  ): Promise<TrainingPlanResponse> {
+    try {
+      const activities = await this.getRecentActivities(userId, 60);
+      const mlActivities = this.convertActivitiesToMLFormat(activities);
+      const user = await this.userRepository.findOne({ where: { id: userId } });
+
+      const response = await this.callMLService('/training/plan', {
+        user_id: userId,
+        activities: mlActivities,
+        user_profile: user ? this.convertUserToMLProfile(user) : null,
+        goals: goals || [],
+        weeks,
+      });
+
+      return response.data as TrainingPlanResponse;
+    } catch (error) {
+      this.logger.error('Error generating training plan:', error);
+      throw new HttpException('Failed to generate training plan', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  async suggestNextWorkout(
+    userId: string,
+    goals?: string[]
+  ): Promise<NextWorkoutSuggestion> {
+    try {
+      const activities = await this.getRecentActivities(userId, 30);
+      const mlActivities = this.convertActivitiesToMLFormat(activities);
+      const user = await this.userRepository.findOne({ where: { id: userId } });
+
+      const response = await this.callMLService('/workout/next', {
+        user_id: userId,
+        activities: mlActivities,
+        user_profile: user ? this.convertUserToMLProfile(user) : null,
+        goals: goals || [],
+      });
+
+      return response.data as NextWorkoutSuggestion;
+    } catch (error) {
+      this.logger.error('Error suggesting next workout:', error);
+      throw new HttpException('Failed to suggest next workout', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
   async checkMLServiceHealth(): Promise<boolean> {
     try {
       const response = await axios.get(`${this.mlServiceUrl}/health`, {
@@ -273,26 +352,41 @@ export class MlService {
       user_id: activity.userId,
       strava_id: activity.stravaId,
       name: activity.name,
-      type: activity.type,
-      distance: activity.distance,
-      duration: activity.duration,
-      average_pace: activity.averagePace,
-      max_pace: activity.maxPace,
-      elevation_gain: activity.elevationGain,
-      average_heart_rate: activity.averageHeartRate,
-      max_heart_rate: activity.maxHeartRate,
-      average_cadence: activity.averageCadence,
+      type: this.normalizeActivityType(activity.type),
+      distance: Number(activity.distance) || 0,
+      duration: Number(activity.duration) || 0,
+      average_pace: activity.averagePace != null ? Number(activity.averagePace) : undefined,
+      max_pace: activity.maxPace != null ? Number(activity.maxPace) : undefined,
+      elevation_gain: activity.elevationGain != null ? Number(activity.elevationGain) : undefined,
+      average_heart_rate: activity.averageHeartRate != null ? Number(activity.averageHeartRate) : undefined,
+      max_heart_rate: activity.maxHeartRate != null ? Number(activity.maxHeartRate) : undefined,
+      average_cadence: activity.averageCadence != null ? Number(activity.averageCadence) : undefined,
       start_date: activity.startDate.toISOString(),
-      start_latitude: activity.startLatitude,
-      start_longitude: activity.startLongitude,
-      end_latitude: activity.endLatitude,
-      end_longitude: activity.endLongitude,
+      start_latitude: activity.startLatitude != null ? Number(activity.startLatitude) : undefined,
+      start_longitude: activity.startLongitude != null ? Number(activity.startLongitude) : undefined,
+      end_latitude: activity.endLatitude != null ? Number(activity.endLatitude) : undefined,
+      end_longitude: activity.endLongitude != null ? Number(activity.endLongitude) : undefined,
       splits: activity.splits,
-      weather: activity.weather,
+      weather: activity.weather ? {
+        temperature: (activity.weather as any).temperature,
+        humidity: (activity.weather as any).humidity,
+        wind_speed: (activity.weather as any).windSpeed ?? (activity.weather as any).wind_speed,
+        conditions: (activity.weather as any).conditions,
+      } : undefined,
       is_race: activity.isRace,
       race_type: activity.raceType,
       description: activity.description
     }));
+  }
+
+  private normalizeActivityType(type: string | null | undefined): string {
+    if (!type) return 'Run';
+    const t = String(type).toLowerCase();
+    if (t.includes('run')) return 'Run';
+    if (t.includes('walk')) return 'Walk';
+    if (t.includes('hike')) return 'Hike';
+    if (t.includes('ride') || t.includes('bike') || t.includes('cycle')) return 'Ride';
+    return 'Run';
   }
 
   private convertUserToMLProfile(user: User): any {
@@ -309,34 +403,55 @@ export class MlService {
   }
 
   private async callMLService(endpoint: string, data: any): Promise<AxiosResponse> {
-    const url = `${this.mlServiceUrl}${endpoint}`;
-    
-    this.logger.debug(`Calling ML service: ${url}`);
-    
-    try {
-      const response = await axios.post(url, data, {
-        timeout: 30000, // 30 second timeout
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      return response;
-    } catch (error) {
-      if (error.response) {
-        this.logger.error(`ML service error: ${error.response.status} - ${error.response.data}`);
-        throw new HttpException(
-          `ML service error: ${error.response.data?.detail || 'Unknown error'}`,
-          error.response.status
-        );
-      } else if (error.request) {
-        this.logger.error('ML service unreachable:', error.message);
-        throw new HttpException('ML service unavailable', HttpStatus.SERVICE_UNAVAILABLE);
-      } else {
-        this.logger.error('ML service request error:', error.message);
-        throw new HttpException('Failed to call ML service', HttpStatus.INTERNAL_SERVER_ERROR);
+    // Build target base URLs with environment-aware ordering.
+    // If ML_SERVICE_URL is not explicitly set (defaulting to localhost), prefer the Docker hostname first
+    // to avoid long timeouts when the backend runs in a container.
+    const configuredUrl = this.mlServiceUrl;
+    const isDefaultLocalhost = !process.env.ML_SERVICE_URL || process.env.ML_SERVICE_URL === 'http://localhost:8000';
+
+    const orderedBases = isDefaultLocalhost
+      ? ['http://ml-service:8000', 'http://localhost:8000']
+      : [configuredUrl, 'http://ml-service:8000', 'http://localhost:8000'];
+
+    // Ensure configured URL is included and keep insertion order without duplicates
+    const bases = Array.from(new Set([configuredUrl, ...orderedBases]));
+
+    let lastNetworkError: any = null;
+    for (const base of bases) {
+      const url = `${base}${endpoint}`;
+      this.logger.debug(`Calling ML service: ${url}`);
+      try {
+        const response = await axios.post(url, data, {
+          // Keep this tighter than frontend client timeout (5s) to avoid client-side timeouts
+          timeout: 4500,
+          headers: { 'Content-Type': 'application/json' },
+        });
+        // If this succeeds and base differs from configured, log a hint
+        if (base !== this.mlServiceUrl) {
+          this.logger.warn(`ML service responded at alternate base ${base}. Consider setting ML_SERVICE_URL to this value.`);
+        }
+        return response;
+      } catch (error) {
+        if (error.response) {
+          // HTTP error from service: do not retry other bases
+          this.logger.error(`ML service error: ${error.response.status} - ${JSON.stringify(error.response.data)}`);
+          throw new HttpException(
+            `ML service error: ${error.response.data?.detail || 'Unknown error'}`,
+            error.response.status
+          );
+        } else if (error.request) {
+          // Network error, try next base
+          lastNetworkError = error;
+          this.logger.warn(`ML service unreachable at ${base}: ${error.message}`);
+          continue;
+        } else {
+          this.logger.error('ML service request error:', error.message);
+          throw new HttpException('Failed to call ML service', HttpStatus.INTERNAL_SERVER_ERROR);
+        }
       }
     }
+    // If we exhausted bases due to network errors
+    throw new HttpException('ML service unavailable', HttpStatus.SERVICE_UNAVAILABLE);
   }
 
   private getFallbackRecommendations(): CoachingRecommendation[] {

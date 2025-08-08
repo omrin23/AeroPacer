@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../lib/auth-context';
-import { analyticsApi, activitiesApi } from '../../lib/api';
+import { analyticsApi, activitiesApi, mlApi } from '../../lib/api';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import WeeklyChart from '../../components/dashboard/WeeklyChart';
@@ -17,6 +17,11 @@ export default function AnalyticsPage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [mlLoading, setMlLoading] = useState(false);
+  const [coaching, setCoaching] = useState<any[]>([]);
+  const [prediction, setPrediction] = useState<any | null>(null);
+  const [trainingPlan, setTrainingPlan] = useState<any | null>(null);
+  const [nextWorkout, setNextWorkout] = useState<any | null>(null);
 
   // Track page view
   useEffect(() => {
@@ -49,6 +54,25 @@ export default function AnalyticsPage() {
         activities: activities,
         stats: statsRes.status === 'fulfilled' ? statsRes.value.data : {},
       });
+
+      // Fetch ML insights in parallel (non-blocking for initial render)
+      setMlLoading(true);
+      Promise.allSettled([
+        mlApi.getCoachingRecommendations({ limit: 30 }),
+        mlApi.predictPerformance({ race_distance: 10000 }), // default 10K
+        mlApi.getTrainingLoad(),
+        mlApi.getFatigue(),
+      ]).then(([recsRes, predRes]) => {
+        if (recsRes.status === 'fulfilled') {
+          // backend returns {success, data}
+          const recsData = (recsRes.value.data?.data) || recsRes.value.data;
+          setCoaching(Array.isArray(recsData) ? recsData : []);
+        }
+        if (predRes.status === 'fulfilled') {
+          const predData = (predRes.value.data?.data) || predRes.value.data;
+          setPrediction(predData);
+        }
+      }).finally(() => setMlLoading(false));
     } catch (err: any) {
       setError('Failed to load analytics data');
       console.error('Analytics data error:', err);
@@ -121,24 +145,26 @@ export default function AnalyticsPage() {
             </Card.Header>
             <Card.Content>
               <div className="space-y-4">
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <h4 className="font-medium text-blue-900 mb-2">📈 Progress Analysis</h4>
-                  <p className="text-blue-700 text-sm">
-                    Your running consistency has improved by 25% this month. Keep maintaining this steady rhythm!
-                  </p>
-                </div>
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <h4 className="font-medium text-green-900 mb-2">🎯 Goal Tracking</h4>
-                  <p className="text-green-700 text-sm">
-                    You're on track to exceed your monthly distance goal by 15%. Consider setting a more challenging target!
-                  </p>
-                </div>
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                  <h4 className="font-medium text-yellow-900 mb-2">⚡ Performance Tip</h4>
-                  <p className="text-yellow-700 text-sm">
-                    Your best performances happen on Tuesday and Thursday. Try scheduling key workouts on these days.
-                  </p>
-                </div>
+                {mlLoading && (
+                  <div className="text-sm text-gray-600">Loading AI insights…</div>
+                )}
+                {prediction && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h4 className="font-medium text-blue-900 mb-2">📈 10K Prediction</h4>
+                    <p className="text-blue-700 text-sm">
+                      Predicted time: {(prediction.predicted_time/60).toFixed(1)} min • Confidence {(Math.round((prediction.confidence||0)*100))}%
+                    </p>
+                  </div>
+                )}
+                {Array.isArray(coaching) && coaching.slice(0,3).map((rec, idx) => (
+                  <div key={idx} className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <h4 className="font-medium text-yellow-900 mb-1">{rec.title}</h4>
+                    <p className="text-yellow-700 text-sm">{rec.message}</p>
+                  </div>
+                ))}
+                {!mlLoading && (!prediction && coaching.length===0) && (
+                  <div className="text-sm text-gray-600">No AI insights yet. Add more activities.</div>
+                )}
               </div>
             </Card.Content>
           </Card>
@@ -155,21 +181,61 @@ export default function AnalyticsPage() {
                 <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-6">
                   <h4 className="font-semibold text-blue-900 mb-3">Training Focus</h4>
                   <p className="text-blue-800 text-sm mb-4">
-                    Based on your recent activities, we recommend focusing on endurance building with longer, slower runs.
+                    Generate a personalized multi-week training plan based on your recent activities.
                   </p>
-                  <Button variant="outline" size="sm">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={async () => {
+                      try {
+                        setMlLoading(true);
+                        const res = await mlApi.generateTrainingPlan({ weeks: 4 });
+                        const planData = res.data?.data || res.data;
+                        setTrainingPlan(planData);
+                      } catch (e) {
+                        console.error('Training plan error', e);
+                      } finally {
+                        setMlLoading(false);
+                      }
+                    }}
+                  >
                     View Training Plan
                   </Button>
+                  {trainingPlan && (
+                    <div className="mt-4 text-sm text-blue-900">
+                      Week 1 target: {trainingPlan?.weeks?.[0]?.target_km || trainingPlan?.targets_km?.[0]} km
+                    </div>
+                  )}
                 </div>
                 
                 <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-6">
                   <h4 className="font-semibold text-purple-900 mb-3">Recovery Insights</h4>
                   <p className="text-purple-800 text-sm mb-4">
-                    Your recovery metrics suggest you're ready for a higher intensity session. Consider a tempo run.
+                    Get a specific, model-driven workout suggestion for your next session.
                   </p>
-                  <Button variant="outline" size="sm">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={async () => {
+                      try {
+                        setMlLoading(true);
+                        const res = await mlApi.suggestNextWorkout();
+                        const w = res.data?.data || res.data;
+                        setNextWorkout(w);
+                      } catch (e) {
+                        console.error('Next workout error', e);
+                      } finally {
+                        setMlLoading(false);
+                      }
+                    }}
+                  >
                     Plan Workout
                   </Button>
+                  {nextWorkout && (
+                    <div className="mt-4 text-sm text-purple-900">
+                      {nextWorkout.title} • {nextWorkout.distance_km || ''} km @ {nextWorkout.pace_s_per_km ? `${Math.floor(nextWorkout.pace_s_per_km/60)}:${String(Math.floor(nextWorkout.pace_s_per_km%60)).padStart(2,'0')}/km` : ''}
+                    </div>
+                  )}
                 </div>
               </div>
             </Card.Content>
