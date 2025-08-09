@@ -33,7 +33,6 @@ AeroPacer connects with running and health data (Strava, Apple Health, etc.) to 
 
 ### Analytics
 - **Mixpanel**: User behavior tracking
-- **Google Analytics 4**: General website analytics
 - **Custom Events**: Running metrics tracking
 
 ## Architecture

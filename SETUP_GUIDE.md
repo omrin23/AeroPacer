@@ -26,13 +26,6 @@ Update the provided `.env` files with your actual API credentials.
 4. Copy your **Project Token**
 5. Update `MIXPANEL_TOKEN` in both `.env` files
 
-#### 📈 Google Analytics Setup
-1. Go to https://analytics.google.com/
-2. Create a new GA4 property
-3. Set up a web data stream for `localhost:3000`
-4. Copy your **Measurement ID** (starts with G-)
-5. Update `GOOGLE_ANALYTICS_ID` in both `.env` files
-
 ### 3. Start the Services
 
 #### Option A: Docker + Local (Recommended)
@@ -48,11 +41,11 @@ Start everything with Docker using docker-compose.
 
 ## 🔑 What Each Service Needs
 
-| Service | Strava | Mixpanel | Google Analytics |
-|---------|--------|----------|------------------|
-| Backend | ✅ Client ID + Secret | ✅ Token | ✅ Measurement ID |
-| Frontend | ✅ Client ID only | ✅ Token | ✅ Measurement ID |
-| ML Service | ❌ | ❌ | ❌ |
+| Service | Strava | Mixpanel |
+|---------|--------|----------|
+| Backend | ✅ Client ID + Secret | ✅ Token |
+| Frontend | ✅ Client ID only | ✅ Token |
+| ML Service | ❌ | ❌ |
 
 ## 🐳 Docker vs Local PostgreSQL
 

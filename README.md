@@ -84,7 +84,7 @@ Start each service in separate terminals after configuring environment variables
 - [ ] Environment configuration setup
 - [ ] Database schema design
 - [ ] Strava OAuth implementation
-- [ ] Analytics integration (Mixpanel + Google Analytics)
+- [ ] Analytics integration (Mixpanel)
 - [ ] Basic dashboard with data visualization
 - [ ] AI/ML model development
 - [ ] User authentication flow
@@ -113,7 +113,6 @@ Start each service in separate terminals after configuring environment variables
 
 ### Analytics & Monitoring
 - **Mixpanel** for user behavior tracking
-- **Google Analytics 4** for web analytics
 - Custom event tracking for running metrics
 
 ## 🏃‍♂️ Core Features (Planned)
@@ -131,7 +130,6 @@ As required by the final project guidelines, AeroPacer includes comprehensive an
 
 - **User Behavior Tracking**: Mixpanel integration for detailed user interaction analysis
 - **Performance Metrics**: Custom events for running data and coaching interactions
-- **Web Analytics**: Google Analytics 4 for general website metrics
 - **Real-time Monitoring**: Dashboard for tracking user engagement
 
 > **Note**: Analytics are configured to work without ad blockers by using first-party tracking and custom implementations.
@@ -143,7 +141,7 @@ Configure the provided `.env` files with your API credentials:
 **Required variables:**
 - Database credentials (pre-configured for Docker)
 - Strava API keys (Client ID & Secret)
-- Analytics tokens (Mixpanel, Google Analytics)
+- Analytics tokens (Mixpanel)
 - JWT secrets
 
 ## 📖 Documentation

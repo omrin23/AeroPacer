@@ -1,14 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as Mixpanel from 'mixpanel';
-import * as ua from 'universal-analytics';
 import { TrackEventDto, PageViewDto, AnalyticsResponseDto, EventType } from './dto';
 
 @Injectable()
 export class AnalyticsService {
   private readonly logger = new Logger(AnalyticsService.name);
   private mixpanel: Mixpanel.Mixpanel;
-  private gaTrackingId: string;
 
   constructor(private configService: ConfigService) {
     // Initialize Mixpanel
@@ -18,14 +16,6 @@ export class AnalyticsService {
       this.logger.log('Mixpanel initialized');
     } else {
       this.logger.warn('Mixpanel token not provided - analytics will be limited');
-    }
-
-    // Initialize Google Analytics
-    this.gaTrackingId = this.configService.get<string>('GOOGLE_ANALYTICS_ID') || '';
-    if (this.gaTrackingId) {
-      this.logger.log('Google Analytics initialized');
-    } else {
-      this.logger.warn('Google Analytics tracking ID not provided');
     }
   }
 
@@ -37,12 +27,6 @@ export class AnalyticsService {
       if (this.mixpanel) {
         await this.trackMixpanelEvent(eventData, trackingId);
       }
-
-      // Track with Google Analytics
-      if (this.gaTrackingId) {
-        await this.trackGAEvent(eventData, trackingId);
-      }
-
       // Store in database for our own analytics
       await this.storeAnalyticsEvent(eventData, trackingId);
 
@@ -72,12 +56,6 @@ export class AnalyticsService {
       if (this.mixpanel) {
         await this.trackMixpanelPageView(pageData, trackingId);
       }
-
-      // Track with Google Analytics
-      if (this.gaTrackingId) {
-        await this.trackGAPageView(pageData, trackingId);
-      }
-
       this.logger.log(`Page view tracked: ${pageData.page} (ID: ${trackingId})`);
       
       return {
@@ -132,26 +110,6 @@ export class AnalyticsService {
     });
   }
 
-  private async trackGAEvent(eventData: TrackEventDto, trackingId: string): Promise<void> {
-    return new Promise((resolve, reject) => {
-      const visitor = ua(this.gaTrackingId, eventData.userId || 'anonymous');
-      
-      visitor.event({
-        ec: 'AeroPacer', // Event Category
-        ea: eventData.eventType, // Event Action
-        el: JSON.stringify(eventData.properties || {}), // Event Label
-        ev: 1, // Event Value
-        tid: trackingId,
-      }, (error) => {
-        if (error) {
-          reject(new Error(`Google Analytics tracking failed: ${error}`));
-        } else {
-          resolve();
-        }
-      });
-    });
-  }
-
   private async trackMixpanelPageView(pageData: PageViewDto, trackingId: string): Promise<void> {
     return new Promise((resolve, reject) => {
       const properties = {
@@ -171,25 +129,6 @@ export class AnalyticsService {
       this.mixpanel.track('page_view', properties, (error) => {
         if (error) {
           reject(new Error(`Mixpanel page view tracking failed: ${error}`));
-        } else {
-          resolve();
-        }
-      });
-    });
-  }
-
-  private async trackGAPageView(pageData: PageViewDto, trackingId: string): Promise<void> {
-    return new Promise((resolve, reject) => {
-      const visitor = ua(this.gaTrackingId, pageData.userId || 'anonymous');
-      
-      visitor.pageview({
-        dp: pageData.page, // Document Path
-        dt: pageData.title, // Document Title
-        dr: pageData.referrer, // Document Referrer
-        tid: trackingId,
-      }, (error) => {
-        if (error) {
-          reject(new Error(`Google Analytics page view tracking failed: ${error}`));
         } else {
           resolve();
         }
