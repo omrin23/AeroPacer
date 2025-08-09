@@ -32,6 +32,7 @@ app.add_middleware(
     allow_origins=[
         os.getenv("BACKEND_URL", "http://localhost:3001"),
         "http://localhost:3000",  # Frontend
+        "http://127.0.0.1:3000",  # Frontend via 127.0.0.1
         "http://frontend:3000"   # Docker frontend
     ],
     allow_credentials=True,

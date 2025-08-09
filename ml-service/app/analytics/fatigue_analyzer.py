@@ -300,19 +300,23 @@ class FatigueAnalyzer:
         
         # Age adjustment
         if 'age' in user_profile:
-            age = user_profile['age']
-            if age > 50:
-                adjusted_score *= 1.2  # Older athletes need more recovery
-            elif age < 25:
-                adjusted_score *= 0.9  # Younger athletes recover faster
+            age = user_profile.get('age')
+            # Guard: only adjust if age is numeric
+            if isinstance(age, (int, float)):
+                if age > 50:
+                    adjusted_score *= 1.2  # Older athletes need more recovery
+                elif age < 25:
+                    adjusted_score *= 0.9  # Younger athletes recover faster
         
         # Fitness level adjustment
         if 'fitness_level' in user_profile:
-            fitness = user_profile['fitness_level'].lower()
-            if fitness == 'elite':
-                adjusted_score *= 0.8  # Elite athletes handle more load
-            elif fitness == 'beginner':
-                adjusted_score *= 1.3  # Beginners fatigue more easily
+            fitness_level = user_profile.get('fitness_level')
+            if isinstance(fitness_level, str):
+                fitness = fitness_level.lower()
+                if fitness == 'elite':
+                    adjusted_score *= 0.8  # Elite athletes handle more load
+                elif fitness == 'beginner':
+                    adjusted_score *= 1.3  # Beginners fatigue more easily
         
         return adjusted_score
     
