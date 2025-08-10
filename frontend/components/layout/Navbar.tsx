@@ -29,13 +29,19 @@ const Navbar: React.FC = () => {
 
   if (!isAuthenticated) {
     return (
-      <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
+      <nav className="sticky top-0 z-50 backdrop-blur supports-[backdrop-filter]:bg-background/70 bg-background/90 border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
             <Link href="/" className="flex items-center space-x-2">
               <span className="text-2xl">🏃‍♂️</span>
-              <span className="text-xl font-bold text-gray-900">AeroPacer</span>
+              <span className="text-xl font-bold text-foreground" style={{fontFamily:'var(--font-sora)'}}>AeroPacer</span>
             </Link>
+
+            <div className="hidden md:flex items-center space-x-6 text-subtle">
+              <Link href="#features" className="hover:text-foreground">Features</Link>
+              <Link href="#pricing" className="hover:text-foreground">Pricing</Link>
+              <Link href="#insights" className="hover:text-foreground">Insights</Link>
+            </div>
             
             <div className="flex items-center space-x-4">
               <Link href="/login">
@@ -59,13 +65,13 @@ const Navbar: React.FC = () => {
   ];
 
   return (
-    <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
+    <nav className="sticky top-0 z-50 backdrop-blur supports-[backdrop-filter]:bg-background/70 bg-background/90 border-b border-border">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
           <div className="flex items-center space-x-8">
             <Link href="/dashboard" className="flex items-center space-x-2">
               <span className="text-2xl">🏃‍♂️</span>
-              <span className="text-xl font-bold text-gray-900">AeroPacer</span>
+              <span className="text-xl font-bold text-foreground" style={{fontFamily:'var(--font-sora)'}}>AeroPacer</span>
             </Link>
             
             <div className="hidden md:flex space-x-6">
@@ -73,7 +79,7 @@ const Navbar: React.FC = () => {
                 <Link
                   key={item.name}
                   href={item.href}
-                  className="flex items-center space-x-1 text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                  className="flex items-center space-x-1 text-subtle hover:text-foreground px-3 py-2 rounded-md text-sm font-medium transition-colors"
                 >
                   <item.icon className="h-4 w-4" />
                   <span>{item.name}</span>
@@ -83,9 +89,9 @@ const Navbar: React.FC = () => {
           </div>
           
           <div className="flex items-center space-x-4">
-            <div className="hidden sm:flex items-center space-x-2 text-sm text-gray-600">
+            <div className="hidden sm:flex items-center space-x-2 text-sm text-subtle">
               <span>Welcome back,</span>
-              <span className="font-medium text-gray-900">{user?.firstName}</span>
+              <span className="font-medium text-foreground">{user?.firstName}</span>
             </div>
             
             <Button

@@ -35,7 +35,7 @@ const Card: React.FC<CardProps> & {
   shadow = 'md',
   hover = false 
 }) => {
-  const baseClasses = 'bg-white rounded-xl border border-gray-200';
+  const baseClasses = 'bg-surface rounded-xl border border-border';
   
   const paddings = {
     none: '',
@@ -46,12 +46,12 @@ const Card: React.FC<CardProps> & {
   
   const shadows = {
     none: '',
-    sm: 'shadow-sm',
-    md: 'shadow-lg',
-    lg: 'shadow-xl',
+    sm: 'shadow-card',
+    md: 'shadow-card',
+    lg: 'shadow-glow',
   };
   
-  const hoverClasses = hover ? 'hover:shadow-xl hover:transform hover:scale-105 transition-all duration-300' : 'transition-shadow duration-300';
+  const hoverClasses = hover ? 'hover:-translate-y-0.5 hover:shadow-glow transition-all duration-300' : 'transition-shadow duration-300';
 
   return (
     <div className={clsx(
@@ -68,7 +68,7 @@ const Card: React.FC<CardProps> & {
 
 const CardHeader: React.FC<CardHeaderProps> = ({ children, className }) => {
   return (
-    <div className={clsx('border-b border-gray-200 pb-4 mb-4', className)}>
+    <div className={clsx('border-b border-border pb-4 mb-4', className)}>
       {children}
     </div>
   );
@@ -84,7 +84,7 @@ const CardContent: React.FC<CardContentProps> = ({ children, className }) => {
 
 const CardFooter: React.FC<CardFooterProps> = ({ children, className }) => {
   return (
-    <div className={clsx('border-t border-gray-200 pt-4 mt-4', className)}>
+    <div className={clsx('border-t border-border pt-4 mt-4', className)}>
       {children}
     </div>
   );

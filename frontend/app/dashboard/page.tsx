@@ -9,6 +9,7 @@ import StatsOverview from '../../components/dashboard/StatsOverview';
 import RecentActivities from '../../components/dashboard/RecentActivities';
 import StravaConnection from '../../components/dashboard/StravaConnection';
 import WeeklyChart from '../../components/dashboard/WeeklyChart';
+import RunningConditions from '../../components/dashboard/RunningConditions';
 import { 
   ChartBarIcon
 } from '@heroicons/react/24/outline';
@@ -159,44 +160,44 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading your dashboard...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-soft mx-auto mb-4"></div>
+          <p className="text-subtle">Loading your dashboard...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          <h1 className="text-3xl font-bold text-foreground mb-2" style={{fontFamily:'var(--font-sora)'}}>
             Welcome back{user?.firstName ? `, ${user.firstName}` : ''}! 🏃‍♂️
           </h1>
-          <p className="text-gray-600">
+          <p className="text-subtle">
             Here's what's happening with your running journey
           </p>
           {user?.stravaId && (
-            <p className="text-sm text-green-600 mt-1">
+            <p className="text-sm text-success mt-1">
               ✅ Connected to Strava
             </p>
           )}
         </div>
 
         {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
-            <p className="text-red-600">{error}</p>
+          <div className="mb-6 rounded-lg p-4 bg-danger/10 border border-danger/30">
+            <p className="text-danger">{error}</p>
           </div>
         )}
 
         {stravaMessage && (
           <div className={`mb-6 border rounded-lg p-4 ${
             stravaMessage.includes('✅') 
-              ? 'bg-green-50 border-green-200 text-green-700' 
-              : 'bg-red-50 border-red-200 text-red-700'
+              ? 'bg-success/10 border-success/30 text-success' 
+              : 'bg-danger/10 border-danger/30 text-danger'
           }`}>
             <p>{stravaMessage}</p>
           </div>
@@ -220,12 +221,14 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Column - Charts and Analytics */}
           <div className="lg:col-span-2 space-y-8">
+            {/* Running Conditions moved to left for better organization */}
+            <RunningConditions />
             {/* Weekly Activity Chart */}
             <Card>
               <Card.Header>
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-                    <ChartBarIcon className="h-5 w-5 mr-2 text-blue-600" />
+                  <h3 className="text-lg font-semibold text-foreground flex items-center">
+                    <ChartBarIcon className="h-5 w-5 mr-2 text-primary-soft" />
                     Weekly Activity
                   </h3>
                   <Button variant="ghost" size="sm">
@@ -245,23 +248,6 @@ export default function DashboardPage() {
           <div className="space-y-8">
             {/* Recent Activities */}
             <RecentActivities activities={data?.recentActivities || []} />
-
-            {/* Today's Weather (Placeholder) */}
-            <Card>
-              <Card.Header>
-                <h3 className="text-lg font-semibold text-gray-900">Running Conditions</h3>
-              </Card.Header>
-              <Card.Content>
-                <div className="text-center py-4">
-                  <div className="text-3xl mb-2">☀️</div>
-                  <p className="text-lg font-medium text-gray-900">22°C</p>
-                  <p className="text-sm text-gray-600">Perfect for running!</p>
-                  <p className="text-xs text-gray-500 mt-2">
-                    Low humidity, light breeze
-                  </p>
-                </div>
-              </Card.Content>
-            </Card>
           </div>
         </div>
       </div>

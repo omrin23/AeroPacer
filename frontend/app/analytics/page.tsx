@@ -89,32 +89,32 @@ export default function AnalyticsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading analytics...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-soft mx-auto mb-4"></div>
+          <p className="text-subtle">Loading analytics...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2 flex items-center">
-            <ChartBarIcon className="h-8 w-8 mr-3 text-blue-600" />
+          <h1 className="text-3xl font-bold text-foreground mb-2 flex items-center" style={{fontFamily:'var(--font-sora)'}}>
+            <ChartBarIcon className="h-8 w-8 mr-3 text-primary-soft" />
             Analytics Dashboard
           </h1>
-          <p className="text-gray-600">
+          <p className="text-subtle">
             Deep insights into your running performance and trends
           </p>
         </div>
 
         {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
-            <p className="text-red-600">{error}</p>
+          <div className="mb-6 rounded-lg p-4 bg-danger/10 border border-danger/30">
+            <p className="text-danger">{error}</p>
           </div>
         )}
 
@@ -128,7 +128,7 @@ export default function AnalyticsPage() {
           {/* Weekly Activity Chart */}
           <Card>
             <Card.Header>
-              <h3 className="text-lg font-semibold text-gray-900">Weekly Activity Trends</h3>
+              <h3 className="text-lg font-semibold text-foreground">Weekly Activity Trends</h3>
             </Card.Header>
             <Card.Content>
               <WeeklyChart activities={data?.activities || []} />
@@ -138,32 +138,32 @@ export default function AnalyticsPage() {
           {/* Performance Insights */}
           <Card>
             <Card.Header>
-              <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-                <FireIcon className="h-5 w-5 mr-2 text-orange-600" />
+              <h3 className="text-lg font-semibold text-foreground flex items-center">
+                <FireIcon className="h-5 w-5 mr-2 text-warning" />
                 AI Performance Insights
               </h3>
             </Card.Header>
             <Card.Content>
               <div className="space-y-4">
                 {mlLoading && (
-                  <div className="text-sm text-gray-600">Loading AI insights…</div>
+                  <div className="text-sm text-subtle">Loading AI insights…</div>
                 )}
                 {prediction && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <h4 className="font-medium text-blue-900 mb-2">📈 10K Prediction</h4>
-                    <p className="text-blue-700 text-sm">
+                  <div className="bg-white/5 border border-border rounded-lg p-4">
+                    <h4 className="font-medium mb-2">📈 10K Prediction</h4>
+                    <p className="text-sm text-subtle">
                       Predicted time: {(prediction.predicted_time/60).toFixed(1)} min • Confidence {(Math.round((prediction.confidence||0)*100))}%
                     </p>
                   </div>
                 )}
                 {Array.isArray(coaching) && coaching.slice(0,3).map((rec, idx) => (
-                  <div key={idx} className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                    <h4 className="font-medium text-yellow-900 mb-1">{rec.title}</h4>
-                    <p className="text-yellow-700 text-sm">{rec.message}</p>
+                  <div key={idx} className="bg-white/5 border border-border rounded-lg p-4">
+                    <h4 className="font-medium mb-1">{rec.title}</h4>
+                    <p className="text-sm text-subtle">{rec.message}</p>
                   </div>
                 ))}
                 {!mlLoading && (!prediction && coaching.length===0) && (
-                  <div className="text-sm text-gray-600">No AI insights yet. Add more activities.</div>
+                  <div className="text-sm text-subtle">No AI insights yet. Add more activities.</div>
                 )}
               </div>
             </Card.Content>
@@ -174,13 +174,13 @@ export default function AnalyticsPage() {
         <div className="mt-8">
           <Card>
             <Card.Header>
-              <h3 className="text-lg font-semibold text-gray-900">🤖 AI Coaching Recommendations</h3>
+              <h3 className="text-lg font-semibold text-foreground">🤖 AI Coaching Recommendations</h3>
             </Card.Header>
             <Card.Content>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-6">
-                  <h4 className="font-semibold text-blue-900 mb-3">Training Focus</h4>
-                  <p className="text-blue-800 text-sm mb-4">
+                <div className="bg-white/5 border border-border rounded-lg p-6">
+                  <h4 className="font-semibold mb-3">Training Focus</h4>
+                  <p className="text-sm text-subtle mb-4">
                     Generate a personalized multi-week training plan based on your recent activities.
                   </p>
                   <Button 
@@ -202,15 +202,15 @@ export default function AnalyticsPage() {
                     View Training Plan
                   </Button>
                   {trainingPlan && (
-                    <div className="mt-4 text-sm text-blue-900">
+                    <div className="mt-4 text-sm text-foreground">
                       Week 1 target: {trainingPlan?.weeks?.[0]?.target_km || trainingPlan?.targets_km?.[0]} km
                     </div>
                   )}
                 </div>
                 
-                <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-6">
-                  <h4 className="font-semibold text-purple-900 mb-3">Recovery Insights</h4>
-                  <p className="text-purple-800 text-sm mb-4">
+                <div className="bg-white/5 border border-border rounded-lg p-6">
+                  <h4 className="font-semibold mb-3">Recovery Insights</h4>
+                  <p className="text-sm text-subtle mb-4">
                     Get a specific, model-driven workout suggestion for your next session.
                   </p>
                   <Button 
@@ -232,7 +232,7 @@ export default function AnalyticsPage() {
                     Plan Workout
                   </Button>
                   {nextWorkout && (
-                    <div className="mt-4 text-sm text-purple-900">
+                    <div className="mt-4 text-sm text-foreground">
                       {nextWorkout.title} • {nextWorkout.distance_km || ''} km @ {nextWorkout.pace_s_per_km ? `${Math.floor(nextWorkout.pace_s_per_km/60)}:${String(Math.floor(nextWorkout.pace_s_per_km%60)).padStart(2,'0')}/km` : ''}
                     </div>
                   )}

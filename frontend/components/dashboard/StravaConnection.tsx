@@ -80,25 +80,25 @@ const StravaConnection: React.FC<StravaConnectionProps> = ({
             <div className="flex items-center space-x-2">
               {isConnected ? (
                 <>
-                  <CheckCircleIcon className="h-5 w-5 text-green-600" />
-                  <span className="text-sm font-medium text-green-600">Connected</span>
+                  <CheckCircleIcon className="h-5 w-5 text-green-500" />
+                  <span className="text-sm font-medium text-green-500">Connected</span>
                 </>
               ) : (
                 <>
-                  <ExclamationTriangleIcon className="h-5 w-5 text-yellow-600" />
-                  <span className="text-sm font-medium text-yellow-600">Not Connected</span>
+                  <ExclamationTriangleIcon className="h-5 w-5 text-yellow-400" />
+                  <span className="text-sm font-medium text-yellow-400">Not Connected</span>
                 </>
               )}
             </div>
             
             {isConnected && lastSync && (
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-muted mt-1">
                 Last synced: {new Date(lastSync).toLocaleDateString()}
               </p>
             )}
             
             {isConnected && status?.athleteName && (
-              <p className="text-sm text-gray-700 mt-1">
+              <p className="text-sm text-subtle mt-1">
                 Connected as: {status.athleteName}
               </p>
             )}
@@ -149,13 +149,9 @@ const StravaConnection: React.FC<StravaConnectionProps> = ({
       </div>
 
       {!isConnected && (
-        <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <h4 className="text-sm font-medium text-blue-900 mb-2">
-            Connect your Strava account
-          </h4>
-          <p className="text-sm text-blue-700">
-            Import your running activities automatically and get personalized insights based on your training data.
-          </p>
+        <div className="mt-4 p-4 bg-white/5 border border-border rounded-lg">
+          <h4 className="text-sm font-medium mb-2">Connect your Strava account</h4>
+          <p className="text-sm text-subtle">Import your running activities automatically and get personalized insights based on your training data.</p>
         </div>
       )}
     </Card>

@@ -73,17 +73,11 @@ const WeeklyChart: React.FC<WeeklyChartProps> = ({ activities }) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
-        <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
-          <p className="font-medium text-gray-900">{label}</p>
-          <p className="text-sm text-blue-600">
-            Distance: {data.distance} km
-          </p>
-          <p className="text-sm text-purple-600">
-            Duration: {data.duration} min
-          </p>
-          <p className="text-sm text-gray-600">
-            Activities: {data.activities}
-          </p>
+        <div className="bg-elevated border border-border rounded-lg shadow-card p-3">
+          <p className="font-medium text-foreground">{label}</p>
+          <p className="text-sm text-primary-soft">Distance: {data.distance} km</p>
+          <p className="text-sm text-accent-purple">Duration: {data.duration} min</p>
+          <p className="text-sm text-subtle">Activities: {data.activities}</p>
         </div>
       );
     }
@@ -118,8 +112,8 @@ const WeeklyChart: React.FC<WeeklyChartProps> = ({ activities }) => {
       {/* Week Navigation */}
       <div className="flex justify-between items-center mb-4">
         <div>
-          <h4 className="text-lg font-medium text-gray-900">{weekLabel}</h4>
-          <p className="text-sm text-gray-600">{dateRange}</p>
+          <h4 className="text-lg font-medium">{weekLabel}</h4>
+          <p className="text-sm text-subtle">{dateRange}</p>
         </div>
         <div className="flex space-x-2">
           <Button
@@ -144,13 +138,13 @@ const WeeklyChart: React.FC<WeeklyChartProps> = ({ activities }) => {
 
       {/* Weekly Summary */}
       <div className="grid grid-cols-2 gap-4 mb-6">
-        <div className="text-center p-3 bg-blue-50 rounded-lg">
-          <p className="text-2xl font-bold text-blue-600">{totalWeekDistance.toFixed(2)}</p>
-          <p className="text-sm text-blue-700">km {weekOffset === 0 ? 'this week' : weekLabel.toLowerCase()}</p>
+        <div className="text-center p-3 bg-white/5 rounded-lg border border-border">
+          <p className="text-2xl font-bold text-primary-soft">{totalWeekDistance.toFixed(2)}</p>
+          <p className="text-sm text-subtle">km {weekOffset === 0 ? 'this week' : weekLabel.toLowerCase()}</p>
         </div>
-        <div className="text-center p-3 bg-purple-50 rounded-lg">
-          <p className="text-2xl font-bold text-purple-600">{Math.round(totalWeekDuration)}</p>
-          <p className="text-sm text-purple-700">minutes {weekOffset === 0 ? 'this week' : weekLabel.toLowerCase()}</p>
+        <div className="text-center p-3 bg-white/5 rounded-lg border border-border">
+          <p className="text-2xl font-bold text-primary-soft">{Math.round(totalWeekDuration)}</p>
+          <p className="text-sm text-subtle">minutes {weekOffset === 0 ? 'this week' : weekLabel.toLowerCase()}</p>
         </div>
       </div>
 
@@ -158,19 +152,19 @@ const WeeklyChart: React.FC<WeeklyChartProps> = ({ activities }) => {
       <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={weeklyData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+            <CartesianGrid strokeDasharray="3 3" stroke="#1f2430" />
             <XAxis 
               dataKey="day" 
               axisLine={false}
               tickLine={false}
-              tick={{ fontSize: 12, fill: '#6b7280' }}
+              tick={{ fontSize: 12, fill: '#9aa3b2' }}
             />
             <YAxis 
               yAxisId="distance"
               orientation="left"
               axisLine={false}
               tickLine={false}
-              tick={{ fontSize: 12, fill: '#6b7280' }}
+              tick={{ fontSize: 12, fill: '#9aa3b2' }}
               domain={[0, maxDistance]}
             />
             <YAxis 
@@ -178,7 +172,7 @@ const WeeklyChart: React.FC<WeeklyChartProps> = ({ activities }) => {
               orientation="right"
               axisLine={false}
               tickLine={false}
-              tick={{ fontSize: 12, fill: '#6b7280' }}
+              tick={{ fontSize: 12, fill: '#9aa3b2' }}
               domain={[0, maxDuration]}
             />
             <Tooltip content={<CustomTooltip />} />
@@ -186,7 +180,7 @@ const WeeklyChart: React.FC<WeeklyChartProps> = ({ activities }) => {
             <Bar 
               yAxisId="distance"
               dataKey="distance" 
-              fill="#3b82f6" 
+              fill="#8b5cf6" 
               name="Distance (km)"
               radius={[2, 2, 0, 0]}
               opacity={0.8}
@@ -194,7 +188,7 @@ const WeeklyChart: React.FC<WeeklyChartProps> = ({ activities }) => {
             <Bar 
               yAxisId="duration"
               dataKey="duration" 
-              fill="#8b5cf6" 
+              fill="#22d3ee" 
               name="Duration (min)"
               radius={[2, 2, 0, 0]}
               opacity={0.6}
@@ -210,22 +204,22 @@ const WeeklyChart: React.FC<WeeklyChartProps> = ({ activities }) => {
             <span>Weekly Distance Goal</span>
             <span>{totalWeekDistance.toFixed(1)} / 25 km</span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
+          <div className="w-full bg-white/10 rounded-full h-2">
             <div 
-              className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+              className="bg-gradient-to-r from-primary-soft to-accent-teal h-2 rounded-full transition-all duration-300" 
               style={{ width: `${Math.min((totalWeekDistance / 25) * 100, 100)}%` }}
             ></div>
           </div>
         </div>
         
         <div>
-          <div className="flex justify-between text-sm text-gray-600 mb-1">
+          <div className="flex justify-between text-sm text-subtle mb-1">
             <span>Weekly Time Goal</span>
             <span>{Math.round(totalWeekDuration)} / 180 min</span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
+          <div className="w-full bg-white/10 rounded-full h-2">
             <div 
-              className="bg-purple-600 h-2 rounded-full transition-all duration-300" 
+              className="bg-gradient-to-r from-accent-teal to-primary-soft h-2 rounded-full transition-all duration-300" 
               style={{ width: `${Math.min((totalWeekDuration / 180) * 100, 100)}%` }}
             ></div>
           </div>

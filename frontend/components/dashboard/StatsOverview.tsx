@@ -98,64 +98,60 @@ const StatsOverview: React.FC<StatsOverviewProps> = ({ stats }) => {
       label: `${selectedPeriod === 'week' ? 'This Week' : selectedPeriod === 'month' ? 'This Month' : 'Total'} Runs`,
       value: periodStats.activities.toLocaleString(),
       icon: CalendarIcon,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50',
+      color: 'text-primary-soft',
+      bgColor: 'bg-white/5',
     },
     {
       label: 'Distance',
       value: formatDistance(periodStats.distance),
       icon: MapIcon,
-      color: 'text-green-600',
-      bgColor: 'bg-green-50',
+      color: 'text-success',
+      bgColor: 'bg-white/5',
     },
     {
       label: 'Time',
       value: formatDuration(periodStats.duration),
       icon: ClockIcon,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-50',
+      color: 'text-accent-purple',
+      bgColor: 'bg-white/5',
     },
     {
       label: 'Avg Pace',
       value: `${formatPace(periodStats.avgPace)}/km`,
       icon: TrophyIcon,
-      color: 'text-yellow-600',
-      bgColor: 'bg-yellow-50',
+      color: 'text-warning',
+      bgColor: 'bg-white/5',
     },
     {
       label: 'Avg Heart Rate',
       value: formatHeartRate(currentStats.averageHeartRate),
       icon: HeartIcon,
-      color: 'text-red-600',
-      bgColor: 'bg-red-50',
+      color: 'text-danger',
+      bgColor: 'bg-white/5',
     },
     {
       label: 'Est. Calories',
       value: estimateCalories(periodStats.distance, periodStats.duration).toLocaleString(),
       icon: FireIcon,
-      color: 'text-orange-600',
-      bgColor: 'bg-orange-50',
+      color: 'text-warning',
+      bgColor: 'bg-white/5',
     },
   ];
 
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold text-gray-900">Your Running Stats</h2>
+        <h2 className="text-xl font-semibold">Your Running Stats</h2>
         
         {/* Time Period Selector */}
-        <div className="flex bg-gray-100 rounded-lg p-1">
+        <div className="flex bg-white/5 border border-border rounded-lg p-1">
           {(['week', 'month', 'all'] as TimePeriod[]).map((period) => (
             <Button
               key={period}
               variant={selectedPeriod === period ? 'primary' : 'ghost'}
               size="sm"
               onClick={() => setSelectedPeriod(period)}
-              className={`px-3 py-1 text-xs font-medium transition-colors ${
-                selectedPeriod === period
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-white'
-              }`}
+              className={`px-3 py-1 text-xs font-medium transition-colors ${selectedPeriod === period ? '' : ''}`}
             >
               {period === 'week' ? 'This Week' : period === 'month' ? 'This Month' : 'All Time'}
             </Button>
@@ -165,9 +161,9 @@ const StatsOverview: React.FC<StatsOverviewProps> = ({ stats }) => {
 
       {/* Stats Summary for verification */}
       {periodStats.activities > 0 && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-          <h4 className="font-medium text-blue-900 mb-2">📊 Data Summary</h4>
-          <p className="text-sm text-blue-700">
+        <div className="bg-white/5 border border-border rounded-lg p-4 mb-4">
+          <h4 className="font-medium mb-2">📊 Data Summary</h4>
+          <p className="text-sm text-subtle">
             Showing {periodStats.activities} {periodStats.activities === 1 ? 'activity' : 'activities'} 
             {selectedPeriod === 'week' ? ' from this week' : selectedPeriod === 'month' ? ' from the last 30 days' : ' total'}
             {periodStats.distance > 0 && ` • ${formatDistance(periodStats.distance)} total distance`}
@@ -179,12 +175,12 @@ const StatsOverview: React.FC<StatsOverviewProps> = ({ stats }) => {
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {statsData.map((stat, index) => (
           <Card key={index} padding="md" shadow="sm" hover className="text-center">
-            <div className={`inline-flex items-center justify-center w-12 h-12 rounded-lg ${stat.bgColor} mb-3`}>
+            <div className={`inline-flex items-center justify-center w-12 h-12 rounded-lg bg-white/5 border border-border mb-3`}>
               <stat.icon className={`h-6 w-6 ${stat.color}`} />
             </div>
             <div className="space-y-1">
-              <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-              <p className="text-sm text-gray-600">{stat.label}</p>
+              <p className="text-2xl font-bold">{stat.value}</p>
+              <p className="text-sm text-subtle">{stat.label}</p>
             </div>
           </Card>
         ))}

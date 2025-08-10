@@ -87,13 +87,13 @@ const RecentActivities: React.FC<RecentActivitiesProps> = ({ activities }) => {
     return (
       <Card>
         <Card.Header>
-          <h3 className="text-lg font-semibold text-gray-900">Recent Activities</h3>
+          <h3 className="text-lg font-semibold text-foreground">Recent Activities</h3>
         </Card.Header>
         <Card.Content>
           <div className="text-center py-8">
             <div className="text-4xl mb-4">🏃‍♂️</div>
-            <h4 className="text-lg font-medium text-gray-900 mb-2">No activities yet</h4>
-            <p className="text-gray-600 mb-4">
+            <h4 className="text-lg font-medium mb-2">No activities yet</h4>
+            <p className="text-subtle mb-4">
               Connect your Strava account to see your recent activities
             </p>
             <Button variant="primary" size="sm">
@@ -106,10 +106,10 @@ const RecentActivities: React.FC<RecentActivitiesProps> = ({ activities }) => {
   }
 
   return (
-    <Card>
+      <Card>
       <Card.Header>
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-gray-900">Recent Activities</h3>
+          <h3 className="text-lg font-semibold text-foreground">Recent Activities</h3>
           <Link href="/activities">
             <Button variant="ghost" size="sm">
               View All
@@ -134,7 +134,7 @@ const RecentActivities: React.FC<RecentActivitiesProps> = ({ activities }) => {
           {safeActivities.slice(0, 5).map((activity) => (
             <div
               key={activity.id}
-              className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors"
+              className="border border-border rounded-lg p-4 hover:bg-white/5 transition-colors"
             >
               <div className="flex items-start justify-between">
                 <div className="flex items-start space-x-3 flex-1">
@@ -143,11 +143,11 @@ const RecentActivities: React.FC<RecentActivitiesProps> = ({ activities }) => {
                   </div>
                   
                   <div className="flex-1 min-w-0">
-                    <h4 className="text-sm font-medium text-gray-900 truncate">
+                    <h4 className="text-sm font-medium truncate text-foreground">
                       {activity.name}
                     </h4>
                     
-                    <div className="flex items-center space-x-4 mt-2 text-xs text-gray-600">
+                    <div className="flex items-center space-x-4 mt-2 text-xs text-subtle">
                       <div className="flex items-center space-x-1">
                         <MapPinIcon className="h-3 w-3" />
                         <span>{formatDistance(activity.distance)}</span>
@@ -165,22 +165,22 @@ const RecentActivities: React.FC<RecentActivitiesProps> = ({ activities }) => {
                     </div>
                     
                     {activity.averagePace && activity.averagePace > 0 && (
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p className="text-xs text-muted mt-1">
                         Avg pace: {formatPace(activity.averagePace)}/km
                       </p>
                     )}
                     
                     {activity.averageHeartRate && (
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p className="text-xs text-muted mt-1">
                         ❤️ Avg HR: {Math.round(activity.averageHeartRate)} bpm
                       </p>
                     )}
                     
                     {/* Enhanced activity details for verification */}
-                    <div className="mt-2 text-xs text-gray-500">
+                    <div className="mt-2 text-xs text-muted">
                       <div className="flex flex-wrap gap-2">
                         {activity.startDate && (
-                          <span className="bg-gray-100 px-2 py-1 rounded">
+                          <span className="bg-white/5 border border-border px-2 py-1 rounded">
                             📅 {new Date(activity.startDate).toLocaleDateString('en-US', { 
                               weekday: 'short', 
                               month: 'short', 
@@ -191,12 +191,12 @@ const RecentActivities: React.FC<RecentActivitiesProps> = ({ activities }) => {
                           </span>
                         )}
                         {activity.type && (
-                          <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                          <span className="bg-white/5 text-foreground px-2 py-1 rounded border border-border">
                             🏃 {activity.type}
                           </span>
                         )}
                         {activity.stravaId && (
-                          <span className="bg-orange-100 text-orange-700 px-2 py-1 rounded">
+                          <span className="bg-white/5 text-foreground px-2 py-1 rounded border border-border">
                             📱 Strava
                           </span>
                         )}
@@ -204,7 +204,7 @@ const RecentActivities: React.FC<RecentActivitiesProps> = ({ activities }) => {
                     </div>
                     
                     {activity.location && (
-                      <p className="text-xs text-gray-500 mt-1 truncate">
+                      <p className="text-xs text-muted mt-1 truncate">
                         📍 {activity.location}
                       </p>
                     )}

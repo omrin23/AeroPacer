@@ -20,14 +20,14 @@ const Button: React.FC<ButtonProps> = ({
   disabled,
   ...props
 }) => {
-  const baseClasses = 'inline-flex items-center justify-center font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
+  const baseClasses = 'inline-flex items-center justify-center font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed';
   
   const variants = {
-    primary: 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transform hover:scale-105 focus:ring-blue-500',
-    secondary: 'bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white shadow-lg hover:shadow-xl transform hover:scale-105 focus:ring-gray-500',
-    outline: 'border-2 border-blue-600 text-blue-600 hover:bg-blue-50 hover:border-blue-700 shadow-sm hover:shadow-md transform hover:scale-105 focus:ring-blue-500',
-    ghost: 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-all duration-200 focus:ring-gray-500',
-    danger: 'bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white shadow-lg hover:shadow-xl transform hover:scale-105 focus:ring-red-500',
+    primary: 'bg-gradient-to-r from-primary-soft to-accent-teal text-white shadow-glow hover:shadow-glow-lg hover:scale-[1.02] focus:ring-ring',
+    secondary: 'bg-elevated text-foreground/90 border border-border hover:bg-surface focus:ring-ring',
+    outline: 'border border-primary-soft/60 text-foreground hover:bg-primary-soft/10 focus:ring-ring',
+    ghost: 'text-subtle hover:text-foreground hover:bg-white/5 focus:ring-ring',
+    danger: 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-card hover:brightness-110 focus:ring-red-500',
   };
   
   const sizes = {
