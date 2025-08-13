@@ -468,11 +468,22 @@ class CoachingEngine:
         activities: List[ActivityData],
         user_profile: Optional[UserProfile] = None,
         goals: Optional[List[str]] = None,
-        weeks: int = 4
+        weeks: int = 4,
+        race_distance: Optional[float] = None,
+        race_date: Optional[datetime] = None,
+        target_time_s: Optional[int] = None,
     ) -> Dict[str, Any]:
         """Generate a multi-week training plan based on training data and goals.
         Returns a dict with week-by-week schedule including workout types and target distances.
         """
+        if race_date is not None:
+            # Derive weeks to race if a race date is provided
+            try:
+                days_to_race = max(0, (race_date - datetime.now()).days)
+                derived_weeks = max(1, int((days_to_race + 6) // 7))
+                weeks = max(weeks or 1, derived_weeks)
+            except Exception:
+                weeks = max(1, weeks)
         if weeks < 1:
             weeks = 1
         if not activities:
@@ -516,18 +527,23 @@ class CoachingEngine:
 
         # Predict performance to derive paces
         try:
-            pred = self.performance_predictor.predict_race_time(activities, race_distance=10000.0)
-            ten_k_pace = (pred.predicted_time / 10000.0)  # sec per meter
-            ten_k_pace_sec_per_km = ten_k_pace * 1000.0
+            # If target time is provided for the race, derive base pace from that
+            if target_time_s and race_distance and race_distance > 0:
+                base_pace_sec_per_km = (float(target_time_s) / float(race_distance)) * 1000.0
+            else:
+                # Fall back to 10K prediction as a proxy for threshold pace
+                pred = self.performance_predictor.predict_race_time(activities, race_distance=10000.0)
+                ten_k_pace = (pred.predicted_time / 10000.0)  # sec per meter
+                base_pace_sec_per_km = ten_k_pace * 1000.0
         except Exception:
             # Fallback from recent average pace
-            ten_k_pace_sec_per_km = float(running_df['pace_min_per_km'].mean() * 60.0) if 'pace_min_per_km' in running_df else 360.0
+            base_pace_sec_per_km = float(running_df['pace_min_per_km'].mean() * 60.0) if 'pace_min_per_km' in running_df else 360.0
 
         paces = {
-            "easy": max(ten_k_pace_sec_per_km * 1.15, 360.0),
-            "long": max(ten_k_pace_sec_per_km * 1.2, 380.0),
-            "tempo": ten_k_pace_sec_per_km * 0.95,
-            "interval": ten_k_pace_sec_per_km * 0.85,
+            "easy": max(base_pace_sec_per_km * 1.15, 360.0),
+            "long": max(base_pace_sec_per_km * 1.2, 380.0),
+            "tempo": base_pace_sec_per_km * 0.95,
+            "interval": base_pace_sec_per_km * 0.85,
         }
 
         # Build weekly schedule using 80/20 rule
@@ -535,22 +551,40 @@ class CoachingEngine:
         days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
         for w_idx in range(weeks):
             target_km = weekly_targets[w_idx]
-            # Allocate distances roughly: long run ~30%, quality ~20%, rest easy
-            long_km = round(min(target_km * self.training_principles['long_run_percentage'], target_km * 0.35), 1)
-            quality_km = round(target_km * self.training_principles['hard_easy_ratio'], 1)
-            remaining_km = max(0.0, target_km - long_km - quality_km)
-            easy_days = 3
-            easy_km_each = round(remaining_km / max(1, easy_days), 1)
+            # Allocate weekly volume specifically for 4 runs/week
+            # Distribute: long ~35%, tempo ~20%, intervals ~15%, recovery = remainder
+            long_km = round(min(target_km * 0.35, target_km * 0.4), 1)
+            tempo_km = round(target_km * 0.2, 1)
+            interval_km = round(target_km * 0.15, 1)
+            recovery_km = round(max(0.0, target_km - long_km - tempo_km - interval_km), 1)
 
             schedule = [
-                {"day": days[0], "type": "rest_or_easy", "desc": "Rest or easy jog", "pace_s_per_km": paces["easy"], "distance_km": 0},
-                {"day": days[1], "type": "quality", "desc": "Intervals (e.g., 5x1km)", "pace_s_per_km": paces["interval"], "distance_km": round(quality_km * 0.5, 1)},
-                {"day": days[2], "type": "easy", "desc": "Easy run", "pace_s_per_km": paces["easy"], "distance_km": easy_km_each},
-                {"day": days[3], "type": "quality", "desc": "Tempo run 20-30 min", "pace_s_per_km": paces["tempo"], "distance_km": round(quality_km * 0.5, 1)},
+                {"day": days[0], "type": "rest", "desc": "Rest or mobility", "pace_s_per_km": None, "distance_km": 0},
+                {"day": days[1], "type": "interval", "desc": "Intervals (e.g., 5x1km)", "pace_s_per_km": paces["interval"], "distance_km": interval_km},
+                {"day": days[2], "type": "rest", "desc": "Rest or cross-train", "pace_s_per_km": None, "distance_km": 0},
+                {"day": days[3], "type": "tempo", "desc": "Tempo run 20-30 min", "pace_s_per_km": paces["tempo"], "distance_km": tempo_km},
                 {"day": days[4], "type": "rest", "desc": "Rest or cross-train", "pace_s_per_km": None, "distance_km": 0},
                 {"day": days[5], "type": "long", "desc": "Long easy run", "pace_s_per_km": paces["long"], "distance_km": long_km},
-                {"day": days[6], "type": "easy", "desc": "Easy run", "pace_s_per_km": paces["easy"], "distance_km": easy_km_each},
+                {"day": days[6], "type": "easy", "desc": "Easy recovery run", "pace_s_per_km": paces["easy"], "distance_km": recovery_km},
             ]
+
+            # Light taper if a race date is provided and we are near race week
+            if race_date is not None:
+                try:
+                    days_to_race = (race_date - datetime.now()).days - (w_idx * 7)
+                    if days_to_race <= 14:
+                        # Reduce volume and intensity as race approaches
+                        for item in schedule:
+                            if item["type"] in ["tempo", "interval", "long"]:
+                                item["distance_km"] = round(item["distance_km"] * 0.8, 1)
+                        if days_to_race <= 7:
+                            for item in schedule:
+                                if item["type"] in ["tempo", "interval"]:
+                                    item["type"] = "sharpen"
+                                    item["desc"] = "Short race-pace efforts"
+                                    item["pace_s_per_km"] = base_pace_sec_per_km * 0.9
+                except Exception:
+                    pass
 
             week_plans.append({
                 "week": w_idx + 1,
@@ -566,7 +600,9 @@ class CoachingEngine:
             "notes": [
                 "Follow 80/20 easy-to-hard principle",
                 "Increase mileage gradually, max 10% per week",
-                "Adjust based on fatigue and readiness"
+                "Adjust based on fatigue and readiness",
+                *( [f"Plan tuned for race on {race_date.date().isoformat()}" ] if race_date else [] ),
+                *( ["Paces derived from target time"] if target_time_s else [] ),
             ]
         }
 
@@ -574,7 +610,10 @@ class CoachingEngine:
         self,
         activities: List[ActivityData],
         user_profile: Optional[UserProfile] = None,
-        goals: Optional[List[str]] = None
+        goals: Optional[List[str]] = None,
+        race_distance: Optional[float] = None,
+        race_date: Optional[datetime] = None,
+        target_time_s: Optional[int] = None,
     ) -> Dict[str, Any]:
         """Suggest a next workout based on current fatigue and recent training mix."""
         if not activities:
@@ -592,8 +631,11 @@ class CoachingEngine:
 
         # Determine baseline pace
         try:
-            pred = self.performance_predictor.predict_race_time(activities, race_distance=10000.0)
-            base_pace = (pred.predicted_time / 10000.0) * 1000.0
+            if target_time_s and race_distance and race_distance > 0:
+                base_pace = (float(target_time_s) / float(race_distance)) * 1000.0
+            else:
+                pred = self.performance_predictor.predict_race_time(activities, race_distance=10000.0)
+                base_pace = (pred.predicted_time / 10000.0) * 1000.0
         except Exception:
             base_pace = float(running_df['pace_min_per_km'].tail(5).mean() * 60.0) if 'pace_min_per_km' in running_df else 360.0
 
@@ -624,6 +666,29 @@ class CoachingEngine:
 
         def not_recent(t: str) -> bool:
             return t not in last_types[-2:]
+
+        # If close to race day, bias towards sharpening/taper
+        if race_date is not None:
+            try:
+                days_to_race = (race_date - datetime.now()).days
+                if days_to_race <= 3:
+                    return {
+                        "type": "shakeout",
+                        "title": "Pre-race shakeout",
+                        "description": "Very easy jog with a few strides.",
+                        "pace_s_per_km": base_pace * 1.2,
+                        "distance_km": 4.0
+                    }
+                if days_to_race <= 10:
+                    return {
+                        "type": "sharpen",
+                        "title": "Race-pace efforts",
+                        "description": "4-6 x 1 min at race pace with full recovery.",
+                        "pace_s_per_km": base_pace * 0.95,
+                        "distance_km": 6.0
+                    }
+            except Exception:
+                pass
 
         # Choose next workout
         if not_recent('interval'):

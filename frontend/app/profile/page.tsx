@@ -193,7 +193,7 @@ export default function ProfilePage() {
               <Card.Content>
                 <div className="space-y-4">
                   {/* Strava Integration */}
-                  <div className="flex items-center justify-between p-4 border rounded-lg bg-white/5 border-border">
+                  <div className="flex flex-wrap items-start sm:items-center justify-between gap-4 p-4 border rounded-lg bg-white/5 border-border">
                     <div className="flex items-center space-x-3">
                       <div className="w-10 h-10 bg-warning rounded-lg flex items-center justify-center">
                         <LinkIcon className="h-5 w-5 text-white" />
@@ -205,36 +205,29 @@ export default function ProfilePage() {
                         </p>
                       </div>
                     </div>
-                    {stravaStatus?.connected ? (
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={handleStravaDisconnect}
-                      >
-                        Disconnect
-                      </Button>
-                    ) : (
-                      <Button variant="primary" size="sm">
-                        Connect
-                      </Button>
-                    )}
+                    <div className="w-full sm:w-auto sm:shrink-0 sm:text-right order-3 sm:order-none">
+                      {stravaStatus?.connected ? (
+                        <Button 
+                          variant="outline" 
+                          size="md"
+                          onClick={handleStravaDisconnect}
+                          className="w-full sm:w-auto"
+                        >
+                          Disconnect
+                        </Button>
+                      ) : (
+                        <Button 
+                          variant="primary" 
+                          size="md" 
+                          className="w-full sm:w-auto"
+                        >
+                          Connect
+                        </Button>
+                      )}
+                    </div>
                   </div>
 
-                  {/* Future integrations */}
-                  <div className="flex items-center justify-between p-4 border rounded-lg opacity-50 bg-white/5 border-border">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-muted rounded-lg flex items-center justify-center">
-                        <LinkIcon className="h-5 w-5 text-white" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-foreground">Garmin Connect</p>
-                        <p className="text-sm text-subtle">Coming soon</p>
-                      </div>
-                    </div>
-                    <Button variant="outline" size="sm" disabled>
-                      Connect
-                    </Button>
-                  </div>
+                  {/* Garmin UI intentionally omitted */}
                 </div>
               </Card.Content>
             </Card>

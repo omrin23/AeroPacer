@@ -48,6 +48,23 @@ class TrainingPlanDto {
   @IsArray()
   @IsString({ each: true })
   goals?: string[];
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  race_distance?: number;
+
+  @IsOptional()
+  @IsString()
+  @IsDateString()
+  race_date?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  target_time_s?: number;
 }
 
 class NextWorkoutDto {
@@ -55,6 +72,23 @@ class NextWorkoutDto {
   @IsArray()
   @IsString({ each: true })
   goals?: string[];
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  race_distance?: number;
+
+  @IsOptional()
+  @IsString()
+  @IsDateString()
+  race_date?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  target_time_s?: number;
 }
 
 @Controller('ml')
@@ -227,7 +261,10 @@ export class MlController {
       const plan = await this.mlService.generateTrainingPlan(
         req.user.id,
         body.weeks ?? 4,
-        body.goals ?? []
+        body.goals ?? [],
+        body.race_distance,
+        body.race_date ? new Date(body.race_date) : undefined,
+        body.target_time_s
       );
 
       return {
@@ -258,7 +295,10 @@ export class MlController {
     try {
       const workout = await this.mlService.suggestNextWorkout(
         req.user.id,
-        body.goals ?? []
+        body.goals ?? [],
+        body.race_distance,
+        body.race_date ? new Date(body.race_date) : undefined,
+        body.target_time_s
       );
 
       return {

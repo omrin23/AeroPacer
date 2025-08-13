@@ -281,7 +281,10 @@ export class MlService {
   async generateTrainingPlan(
     userId: string,
     weeks: number = 4,
-    goals?: string[]
+    goals?: string[],
+    raceDistance?: number,
+    raceDate?: Date,
+    targetTimeSeconds?: number,
   ): Promise<TrainingPlanResponse> {
     try {
       const activities = await this.getRecentActivities(userId, 60);
@@ -294,6 +297,9 @@ export class MlService {
         user_profile: user ? this.convertUserToMLProfile(user) : null,
         goals: goals || [],
         weeks,
+        race_distance: raceDistance,
+        race_date: raceDate ? raceDate.toISOString() : undefined,
+        target_time_s: targetTimeSeconds,
       });
 
       return response.data as TrainingPlanResponse;
@@ -305,7 +311,10 @@ export class MlService {
 
   async suggestNextWorkout(
     userId: string,
-    goals?: string[]
+    goals?: string[],
+    raceDistance?: number,
+    raceDate?: Date,
+    targetTimeSeconds?: number,
   ): Promise<NextWorkoutSuggestion> {
     try {
       const activities = await this.getRecentActivities(userId, 30);
@@ -317,6 +326,9 @@ export class MlService {
         activities: mlActivities,
         user_profile: user ? this.convertUserToMLProfile(user) : null,
         goals: goals || [],
+        race_distance: raceDistance,
+        race_date: raceDate ? raceDate.toISOString() : undefined,
+        target_time_s: targetTimeSeconds,
       });
 
       return response.data as NextWorkoutSuggestion;

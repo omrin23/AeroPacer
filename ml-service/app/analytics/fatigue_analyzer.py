@@ -63,6 +63,17 @@ class FatigueAnalyzer:
         weights = {'training_load': 0.3, 'intensity': 0.25, 'volume': 0.25, 'recovery_debt': 0.2}
         overall_fatigue = sum(score * weights[component] 
                              for component, score in fatigue_components.items())
+
+        # RECENCY ADJUSTMENT: if last activity was several days ago, reduce fatigue accordingly
+        try:
+            last_days_ago = int((datetime.now() - recent_df['start_date'].max()).days)
+            if last_days_ago >= 3:
+                reduction = min(0.2 * (last_days_ago - 2), 0.6)  # up to 60% reduction
+                overall_fatigue = overall_fatigue * (1 - reduction)
+            if last_days_ago >= 7:
+                overall_fatigue = min(overall_fatigue, 20)
+        except Exception:
+            pass
         
         # Apply user-specific adjustments
         if user_profile:

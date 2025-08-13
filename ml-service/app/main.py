@@ -78,12 +78,18 @@ class TrainingPlanRequest(BaseModel):
     user_profile: Optional[UserProfile] = None
     goals: Optional[List[str]] = None
     weeks: Optional[int] = 4
+    race_distance: Optional[float] = None
+    race_date: Optional[datetime] = None
+    target_time_s: Optional[int] = None
 
 class NextWorkoutRequest(BaseModel):
     user_id: str
     activities: List[ActivityData]
     user_profile: Optional[UserProfile] = None
     goals: Optional[List[str]] = None
+    race_distance: Optional[float] = None
+    race_date: Optional[datetime] = None
+    target_time_s: Optional[int] = None
 
 @app.get("/")
 async def root():
@@ -199,7 +205,10 @@ async def generate_training_plan(request: TrainingPlanRequest):
             activities=request.activities,
             user_profile=request.user_profile,
             goals=request.goals,
-            weeks=request.weeks or 4
+            weeks=request.weeks or 4,
+            race_distance=request.race_distance,
+            race_date=request.race_date,
+            target_time_s=request.target_time_s,
         )
         return plan
     except Exception as e:
@@ -212,7 +221,10 @@ async def suggest_next_workout(request: NextWorkoutRequest):
         workout = coaching_engine.suggest_next_workout(
             activities=request.activities,
             user_profile=request.user_profile,
-            goals=request.goals
+            goals=request.goals,
+            race_distance=request.race_distance,
+            race_date=request.race_date,
+            target_time_s=request.target_time_s,
         )
         return workout
     except Exception as e:
