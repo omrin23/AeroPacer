@@ -50,33 +50,16 @@ AeroPacer connects with running and health data (Strava, Apple Health, etc.) to 
                        └─────────────────┘
 ```
 
-## Development Status
+## Current Capabilities
 
-### ✅ Completed
-- [x] Project structure planning
-- [x] Tech stack decision
-- [x] Complete project folder structure created
-- [x] NestJS backend foundation with core modules
-- [x] Next.js frontend foundation with modern setup
-- [x] Python FastAPI ML service foundation
-- [x] Docker development environment
-- [x] Essential configuration files
-- [x] Project documentation
-
-### 🚧 In Progress
-- None currently
-
-### 📋 Next Todo
-- [ ] Environment configuration setup
-- [ ] Database schema implementation
-- [ ] Strava API integration
-- [ ] Basic dashboard with data visualization
-- [ ] Analytics implementation
-- [ ] AI coaching algorithms
-- [ ] Deployment setup
+- Authentication (register/login/refresh/logout, profile)
+- Strava OAuth (connect, callback, disconnect, connection status, activities sync + extended sync)
+- ML integration: coaching recommendations, performance prediction, fatigue analysis, training load, race strategy, training plan, next workout
+- Analytics: server-side Mixpanel integration and custom event/page tracking endpoints
+- Dockerized dev environment (Postgres, Redis, services)
 
 ## Getting Started
-(To be updated as development progresses)
+See `SETUP_GUIDE.md` and `START_SERVICES.md`.
 
 ## Project Requirements
 - Analytics integration (required for final project)

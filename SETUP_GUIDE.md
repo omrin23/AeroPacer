@@ -45,7 +45,7 @@ Start everything with Docker using docker-compose.
 |---------|--------|----------|
 | Backend | ✅ Client ID + Secret | ✅ Token |
 | Frontend | ✅ Client ID only | ✅ Token |
-| ML Service | ❌ | ❌ |
+| ML Service |
 
 ## 🐳 Docker vs Local PostgreSQL
 
@@ -68,7 +68,8 @@ Start everything with Docker using docker-compose.
 Make sure PostgreSQL container is running with Docker.
 
 **Frontend can't reach backend?**
-- Check `NEXT_PUBLIC_BACKEND_URL=http://localhost:3001` in `frontend/.env.local`
+- The frontend proxies `/api/*` to the backend via Next.js `rewrites` using `BACKEND_URL` (see `frontend/next.config.js`).
+- If needed, set `BACKEND_URL=http://localhost:3001` in `frontend/.env.local`.
 
 **Strava OAuth not working?**
 - Verify callback URL: `http://localhost:3001/api/strava/callback`
